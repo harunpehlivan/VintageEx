@@ -10,14 +10,15 @@ import ex_commands
 
 
 def compute_flags(view, term):
-    flags = 0 # case sensitive
     search_mode = view.settings().get('vintage_search_mode')
-    if search_mode == 'smart_case':
-        if term.lower() == term:
-            flags = sublime.IGNORECASE
-    elif search_mode == 'case_insensitive':
-        flags = sublime.IGNORECASE
-    return flags
+    return (
+        sublime.IGNORECASE
+        if search_mode == 'smart_case'
+        and term.lower() == term
+        or search_mode != 'smart_case'
+        and search_mode == 'case_insensitive'
+        else 0
+    )
 
 
 class SearchImpl(object):
@@ -59,27 +60,26 @@ class SearchImpl(object):
                                                          left_side.begin(),
                                                          left_side.end(),
                                                          self.flags)
-            else:
-                line_nr = ex_location.reverse_search(self.view, self.cmd,
-                                                end=current_line.begin() - 1,
-                                                flags=self.flags)
-                if line_nr:
-                    pt = self.view.text_point(line_nr - 1, 0)
-                    line = self.view.full_line(pt)
-                    if line.begin() != current_line.begin():
-                        next_match = ex_location.find_last_match(self.view,
-                                                             self.cmd,
-                                                             line.begin(),
-                                                             line.end(),
-                                                             self.flags)
+            elif line_nr := ex_location.reverse_search(
+                self.view, self.cmd, end=current_line.begin() - 1, flags=self.flags
+            ):
+                pt = self.view.text_point(line_nr - 1, 0)
+                line = self.view.full_line(pt)
+                if line.begin() != current_line.begin():
+                    next_match = ex_location.find_last_match(self.view,
+                                                         self.cmd,
+                                                         line.begin(),
+                                                         line.end(),
+                                                         self.flags)
         else:
             next_match = self.view.find(self.cmd, sel.end(), self.flags)
         # handle search restart
         if not next_match:
             if self.reversed:
                 sublime.status_message("VintageEx: search hit TOP, continuing at BOTTOM")
-                line_nr = ex_location.reverse_search(self.view, self.cmd, flags=self.flags)
-                if line_nr:
+                if line_nr := ex_location.reverse_search(
+                    self.view, self.cmd, flags=self.flags
+                ):
                     pt = self.view.text_point(line_nr - 1, 0)
                     line = self.view.full_line(pt)
                     next_match = ex_location.find_last_match(self.view,

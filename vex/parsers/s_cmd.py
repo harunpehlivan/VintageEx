@@ -25,16 +25,15 @@ class SubstituteLexer(Lexer):
     def _match_flags(self):
         buf = []
         while self.c != EOF and self.c in self.FLAG:
-            if self.c in self.FLAG:
-                buf.append(self.c)
+            buf.append(self.c)
             self.consume()
         return ''.join(buf)
 
     def _match_pattern(self):
         buf = []
-        while self.c != EOF and self.c != self.delimiter:
+        while self.c not in [EOF, self.delimiter]:
+            buf.append(self.c)
             if self.c == '\\':
-                buf.append(self.c)
                 self.consume()
                 if self.c == self.delimiter:
                     # Overwrite the \ we've just stored.
@@ -47,7 +46,6 @@ class SubstituteLexer(Lexer):
                 if self.c == EOF:
                     break
             else:
-                buf.append(self.c)
                 self.consume()
 
         return ''.join(buf)
@@ -75,16 +73,13 @@ class SubstituteLexer(Lexer):
         return buf
 
     def _parse_long(self):
-        buf = []
-
         self.delimiter = self.c
         self.consume()
 
         if self.c == EOF:
             return ['', '', '', '']
 
-        buf.append(self._match_pattern())
-
+        buf = [self._match_pattern()]
         if self.c != EOF:
             # We're at a separator now --we MUST be.
             self.consume()

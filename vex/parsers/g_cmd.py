@@ -16,9 +16,9 @@ class GlobalLexer(Lexer):
 
     def _match_pattern(self):
         buf = []
-        while self.c != EOF and self.c != self.delimiter:
+        while self.c not in [EOF, self.delimiter]:
+            buf.append(self.c)
             if self.c == '\\':
-                buf.append(self.c)
                 self.consume()
                 if self.c in '\\':
                     # Don't store anything, we're escaping \.
@@ -31,26 +31,22 @@ class GlobalLexer(Lexer):
                 if self.c == EOF:
                     break
             else:
-                buf.append(self.c)
                 self.consume()
 
         return ''.join(buf)
 
     def _parse_long(self):
-        buf = []
-
         self.delimiter = self.c
         self.consume()
 
-        buf.append(self._match_pattern())
-
+        buf = [self._match_pattern()]
         self.consume()
         buf.append(self.string[self.cursor:])
 
         return buf
 
     def _do_parse(self):
-        if not self.c in self.DELIMITER:
+        if self.c not in self.DELIMITER:
             raise SyntaxError("expected delimiter, got '%s'" % self.c)
         return self._parse_long()
 

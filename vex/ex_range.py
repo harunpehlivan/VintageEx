@@ -22,9 +22,8 @@ class VimRange(object):
         for a, b in regions:
             r = sublime.Region(self.view.text_point(a - 1, 0),
                                self.view.line(self.view.text_point(b - 1, 0)).end())
-            if self.view.substr(r)[-1] == "\n":
-                if r.begin() != r.end():
-                    r = sublime.Region(r.begin(), r.end() - 1)
+            if self.view.substr(r)[-1] == "\n" and r.begin() != r.end():
+                r = sublime.Region(r.begin(), r.end() - 1)
             blocks.append(r)
         return blocks
 
@@ -98,7 +97,7 @@ def new_calculate_range(view, r):
                 end -= 1
             all_line_blocks.append((start, end))
         return all_line_blocks, True
-        
+
     # todo: '< and other marks
     if r['left_ref'] and (r['left_ref'].startswith("'") or (r['right_ref'] and r['right_ref'].startswith("'"))):
         return []
@@ -112,28 +111,24 @@ def new_calculate_range(view, r):
     current_line = None
     lr = r['left_ref']
     if lr is not None:
-        current_line = calculate_relative_ref(view, lr) 
-    loffset = r['left_offset']
-    if loffset:
+        current_line = calculate_relative_ref(view, lr)
+    if loffset := r['left_offset']:
         current_line = current_line or 0
         current_line += loffset
 
-    searches = r['left_search_offsets']
-    if searches:
+    if searches := r['left_search_offsets']:
         current_line = new_calculate_search_offsets(view, searches, current_line or calculate_relative_ref(view, '.'))
     left = current_line
 
     current_line = None
     rr = r['right_ref']
     if rr is not None:
-        current_line = calculate_relative_ref(view, rr) 
-    roffset = r['right_offset']
-    if roffset:
+        current_line = calculate_relative_ref(view, rr)
+    if roffset := r['right_offset']:
         current_line = current_line or 0
         current_line += roffset
 
-    searches = r['right_search_offsets']
-    if searches:
+    if searches := r['right_search_offsets']:
         current_line = new_calculate_search_offsets(view, searches, current_line or calculate_relative_ref(view, '.'))
     right = current_line
 

@@ -336,9 +336,9 @@ def find_command(cmd_name):
     partial_matches = [name for name in EX_COMMANDS.keys()
                                             if name[0].startswith(cmd_name)]
     if not partial_matches: return None
-    full_match = [(ln, sh) for (ln, sh) in partial_matches
-                                                if cmd_name in (ln, sh)]
-    if full_match:
+    if full_match := [
+        (ln, sh) for (ln, sh) in partial_matches if cmd_name in (ln, sh)
+    ]:
         return full_match[0]
     else:
         return partial_matches[0]
@@ -348,7 +348,7 @@ def parse_command(cmd):
     cmd_name = cmd.strip()
     if len(cmd_name) > 1:
         cmd_name = cmd_name[1:]
-    elif not cmd_name == ':':
+    elif cmd_name != ':':
         return None
 
     parser = parsers.cmd_line.CommandLineParser(cmd[1:])
@@ -365,12 +365,11 @@ def parse_command(cmd):
 
     cmd_args = {}
     for pattern in cmd_data.invocations:
-        found_args = pattern.search(args)
-        if found_args:
+        if found_args := pattern.search(args):
             found_args = found_args.groupdict()
             # get rid of unset arguments so they don't clobber defaults
-            found_args = dict((k, v) for k, v in found_args.iteritems()
-                                                        if v is not None)
+            found_args = {k: v for k, v in found_args.iteritems()
+                                                                    if v is not None}
             cmd_args.update(found_args)
             break
 

@@ -78,16 +78,17 @@ def make_zipfile (base_name, base_dir, verbose=0, dry_run=0):
     return zip_filename
 
 
-def show_formats ():
+def show_formats():
     """Print all possible values for the 'formats' option (used by
     the "--help-formats" command-line option).
     """
     from distutils.fancy_getopt import FancyGetopt
     from distutils.archive_util import ARCHIVE_FORMATS
-    formats=[]
-    for format in ARCHIVE_FORMATS.keys():
-        formats.append(("formats=" + format, None,
-                        ARCHIVE_FORMATS[format][2]))
+    formats = [
+        ("formats=" + format, None, ARCHIVE_FORMATS[format][2])
+        for format in ARCHIVE_FORMATS.keys()
+    ]
+
     formats.sort()
     pretty_printer = FancyGetopt(formats)
     pretty_printer.print_help(
@@ -212,7 +213,7 @@ class spa (Command):
         self.make_distribution()
 
 
-    def check_metadata (self):
+    def check_metadata(self):
         """Ensure that all required elements of meta-data (name, version,
         URL, (author and author_email) or (maintainer and
         maintainer_email)) are supplied by the Distribution object; warn if
@@ -220,12 +221,11 @@ class spa (Command):
         """
         metadata = self.distribution.metadata
 
-        missing = []
-        for attr in ('name', 'version', 'url'):
-            if not (hasattr(metadata, attr) and getattr(metadata, attr)):
-                missing.append(attr)
-
-        if missing:
+        if missing := [
+            attr
+            for attr in ('name', 'version', 'url')
+            if not (hasattr(metadata, attr) and getattr(metadata, attr))
+        ]:
             self.warn("missing required meta-data: " +
                       string.join(missing, ", "))
 
@@ -315,7 +315,7 @@ class spa (Command):
     # get_file_list ()
 
 
-    def add_defaults (self):
+    def add_defaults(self):
         """Add all the default files to self.filelist:
           - README or README.txt
           - setup.py
@@ -343,16 +343,14 @@ class spa (Command):
                 if not got_it:
                     self.warn("standard file not found: should have one of " +
                               string.join(alts, ', '))
+            elif os.path.exists(fn):
+                self.filelist.append(fn)
             else:
-                if os.path.exists(fn):
-                    self.filelist.append(fn)
-                else:
-                    self.warn("standard file '%s' not found" % fn)
+                self.warn("standard file '%s' not found" % fn)
 
         optional = ['test/test*.py', 'setup.cfg']
         for pattern in optional:
-            files = filter(os.path.isfile, glob(pattern))
-            if files:
+            if files := filter(os.path.isfile, glob(pattern)):
                 self.filelist.extend(files)
 
         if self.distribution.has_pure_modules():
@@ -404,7 +402,7 @@ class spa (Command):
     # read_template ()
 
 
-    def prune_file_list (self):
+    def prune_file_list(self):
         """Prune off branches that might slip into the file list as created
         by 'read_template()', but really don't belong there:
           * the build tree (typically "build")
@@ -421,11 +419,7 @@ class spa (Command):
 
         # pruning out vcs directories
         # both separators are used under win32
-        if sys.platform == 'win32':
-            seps = r'/|\\'
-        else:
-            seps = '/'
-
+        seps = r'/|\\' if sys.platform == 'win32' else '/'
         vcs_dirs = ['RCS', 'CVS', r'\.svn', r'\.hg', r'\.git', r'\.bzr',
                     '_darcs']
         vcs_ptrn = r'(^|%s)(%s)(%s).*' % (seps, '|'.join(vcs_dirs), seps)
@@ -443,21 +437,20 @@ class spa (Command):
     # write_manifest ()
 
 
-    def read_manifest (self):
+    def read_manifest(self):
         """Read the manifest file (named by 'self.manifest') and use it to
         fill in 'self.filelist', the list of files to include in the source
         distribution.
         """
         log.info("reading manifest file '%s'", self.manifest)
-        manifest = open(self.manifest)
-        while 1:
-            line = manifest.readline()
-            if line == '':              # end of file
-                break
-            if line[-1] == '\n':
-                line = line[0:-1]
-            self.filelist.append(line)
-        manifest.close()
+        with open(self.manifest) as manifest:
+            while 1:
+                line = manifest.readline()
+                if line == '':              # end of file
+                    break
+                if line[-1] == '\n':
+                    line = line[:-1]
+                self.filelist.append(line)
 
     # read_manifest ()
 

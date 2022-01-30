@@ -15,7 +15,7 @@ class TestRegexToken(unittest.TestCase):
         self.assertTrue("foo" in self.token)
 
     def testCanTestEquality(self):
-        self.assertTrue("fo" == self.token)
+        self.assertTrue(self.token == "fo")
 
 
 class TestLexer(unittest.TestCase):

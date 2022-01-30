@@ -41,11 +41,9 @@ def is_any_buffer_dirty(window):
 # TODO: this code must be shared with Vintage, not reimplemented here.
 def set_register(text, register):
     global g_registers
-    if register == '*' or register == '+':
+    if register in ['*', '+']:
         sublime.set_clipboard(text)
-    elif register == '%':
-        pass
-    else:
+    elif register != '%':
         reg = register.lower()
         append = (reg != register)
 
@@ -91,10 +89,7 @@ def get_region_by_range(view, line_range=None, as_lines=False):
 
     if line_range:
         vim_range = ex_range.VimRange(view, line_range)
-        if as_lines:
-            return vim_range.lines()
-        else:
-            return vim_range.blocks()
+        return vim_range.lines() if as_lines else vim_range.blocks()
 
 
 class ExGoto(sublime_plugin.TextCommand):
@@ -314,9 +309,8 @@ class ExWriteFile(sublime_plugin.TextCommand):
                 start_deleting += len(text)
             self.view.replace(edit, sublime.Region(start_deleting,
                                         self.view.size()), '')
-        else:
-            if self.view.is_dirty():
-                self.view.run_command('save')
+        elif self.view.is_dirty():
+            self.view.run_command('save')
 
 
 class ExWriteAll(sublime_plugin.TextCommand):
@@ -335,11 +329,7 @@ class ExFile(sublime_plugin.TextCommand):
     def run(self, edit, forced=False):
         # XXX figure out what the right params are. vim's help seems to be
         # wrong
-        if self.view.file_name():
-            fname = self.view.file_name()
-        else:
-            fname = 'untitled'
-
+        fname = self.view.file_name() or 'untitled'
         attrs = ''
         if self.view.is_read_only():
             attrs = 'readonly'
@@ -438,10 +428,9 @@ class ExOnly(sublime_plugin.TextCommand):
     """ Command: :only
     """
     def run(self, edit, forced=False):
-        if not forced:
-            if is_any_buffer_dirty(self.view.window()):
-                ex_error.display_error(ex_error.ERR_OTHER_BUFFER_HAS_CHANGES)
-                return
+        if not forced and is_any_buffer_dirty(self.view.window()):
+            ex_error.display_error(ex_error.ERR_OTHER_BUFFER_HAS_CHANGES)
+            return
 
         w = self.view.window()
         current_id = self.view.id()
@@ -621,10 +610,7 @@ class ExPrint(sublime_plugin.TextCommand):
         for r in rs:
             for line in self.view.lines(r):
                 text = self.view.substr(line)
-                if '#' in flags:
-                    row = self.view.rowcol(line.begin())[0] + 1
-                else:
-                    row = ''
+                row = self.view.rowcol(line.begin())[0] + 1 if '#' in flags else ''
                 to_display.append((text, row))
 
         v = self.view.window().new_file()

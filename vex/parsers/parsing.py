@@ -15,10 +15,7 @@ class Lexer(object):
 
     def consume(self):
         self.cursor += 1
-        if self.cursor >= len(self.string):
-            self.c = EOF
-        else:
-            self.c = self.string[self.cursor]
+        self.c = EOF if self.cursor >= len(self.string) else self.string[self.cursor]
 
     def _do_parse(self):
         pass
@@ -28,10 +25,7 @@ class Lexer(object):
             raise TypeError("Can only parse strings.")
         self._reset()
         self.string = string
-        if not string:
-            self.c = EOF
-        else:
-            self.c = string[0]
+        self.c = EOF if not string else string[0]
         return self._do_parse()
 
 

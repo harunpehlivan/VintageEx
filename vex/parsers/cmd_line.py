@@ -50,8 +50,7 @@ class VimParser(ParserBase):
     def parse_full_range(self):
         # todo: make sure that parse_range throws error for unknown tokens
         self.parse_range()
-        sep = self.match_one(',;')
-        if sep:
+        if sep := self.match_one(',;'):
             if not self.result[self.current_side + '_offset'] and not self.result[self.current_side + '_ref']:
                 self.result[self.current_side + '_ref'] = '.'
             self.consume()
@@ -59,7 +58,7 @@ class VimParser(ParserBase):
             self.current_side = 'right'
             self.parse_range()
 
-        if self.c != EOF and not (self.c.isalpha() or self.c in '&!'):
+        if self.c != EOF and not self.c.isalpha() and self.c not in '&!':
             raise SyntaxError("E492 Not an editor command.")
 
         return self.result
@@ -67,13 +66,16 @@ class VimParser(ParserBase):
     def parse_range(self):
         if self.c == EOF:
             return self.result
-        line_ref = self.consume_if_in(list('.%$'))
-        if line_ref:
+        if line_ref := self.consume_if_in(list('.%$')):
             self.result[self.current_side + "_ref"] = line_ref
         while self.c != EOF:
             if self.c == "'":
                 self.consume()
-                if self.c != EOF and not (self.c.isalpha() or self.c in ("<", ">")):
+                if (
+                    self.c != EOF
+                    and not self.c.isalpha()
+                    and self.c not in ("<", ">")
+                ):
                     raise SyntaxError("E492 Not an editor command.")
                 self.result[self.current_side + "_ref"] = "'%s" % self.c
                 self.consume()
@@ -113,8 +115,7 @@ class VimParser(ParserBase):
     def match_search_based_offsets(self):
         offsets = []
         while self.c != EOF and self.c.startswith(tuple('/?')):
-            new_offset = []
-            new_offset.append(self.c)
+            new_offset = [self.c]
             search = self.match_one_search_offset()
             new_offset.append(search)
             # numeric_offset = self.consume_while_match('^[0-9+-]') or '0'
@@ -127,7 +128,7 @@ class VimParser(ParserBase):
         search_kind = self.c
         rv = ''
         self.consume()
-        while self.c != EOF and self.c != search_kind:
+        while self.c not in [EOF, search_kind]:
             if self.c == '\\':
                 self.consume()
                 if self.c != EOF:
@@ -154,9 +155,7 @@ class VimParser(ParserBase):
                         self.result[self.current_side + '_ref'] = '.'
                     sign = -1 if signs[-1] == '-' else 1
                     signs = signs[:-1] if signs else []
-                subtotal = 0
-                for item in signs:
-                    subtotal += 1 if item == '+' else -1 
+                subtotal = sum(1 if item == '+' else -1 for item in signs)
                 offsets.append(subtotal)
             elif self.c.isdigit():
                 nr = self.consume_while_match('^[0-9]')
@@ -210,7 +209,6 @@ class CommandLineParser(ParserBase):
 
     def parse_commands(self):
         name = ''
-        cmd = {}
         while self.c != EOF:
             if self.c.isalpha() and '&' not in name:
                 name += self.c
@@ -225,15 +223,14 @@ class CommandLineParser(ParserBase):
             name = '!'
             self.consume()
 
-        cmd['cmd'] = name
-        cmd['forced'] = self.c == '!'
+        cmd = {'cmd': name, 'forced': self.c == '!'}
         if cmd['forced']:
             self.consume()
 
         while self.c != EOF and self.c == ' ':
             self.consume()
         cmd['args'] = ''
-        if not self.c == EOF:
+        if self.c != EOF:
             cmd['args'] = self.source[self.n:]
         self.result['commands'].append(cmd)
 
@@ -250,8 +247,7 @@ class AddressParser(ParserBase):
     def parse(self):
         if self.c == EOF:
             return self.result
-        ref = self.consume_if_in(list('.$'))
-        if ref:
+        if ref := self.consume_if_in(list('.$')):
             self.result["ref"] = ref
 
         while self.c != EOF:
@@ -267,8 +263,7 @@ class AddressParser(ParserBase):
     def match_search_based_offsets(self):
         offsets = []
         while self.c != EOF and self.c.startswith(tuple('/?')):
-            new_offset = []
-            new_offset.append(self.c)
+            new_offset = [self.c]
             search = self.match_one_search_offset()
             new_offset.append(search)
             # numeric_offset = self.consume_while_match('^[0-9+-]') or '0'
@@ -281,7 +276,7 @@ class AddressParser(ParserBase):
         search_kind = self.c
         rv = ''
         self.consume()
-        while self.c != EOF and self.c != search_kind:
+        while self.c not in [EOF, search_kind]:
             if self.c == '\\':
                 self.consume()
                 if self.c != EOF:
@@ -306,9 +301,7 @@ class AddressParser(ParserBase):
                 if self.c != EOF and self.c.isdigit():
                     sign = -1 if signs[-1] == '-' else 1
                     signs = signs[:-1] if signs else []
-                subtotal = 0
-                for item in signs:
-                    subtotal += 1 if item == '+' else -1 
+                subtotal = sum(1 if item == '+' else -1 for item in signs)
                 offsets.append(subtotal)
             elif self.c.isdigit():
                 nr = self.consume_while_match('^[0-9]')

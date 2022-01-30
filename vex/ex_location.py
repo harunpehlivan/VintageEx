@@ -97,13 +97,10 @@ def reverse_search(view, what, start=0, end=-1, flags=0):
 def search(view, what, start_line=None, flags=0):
     # TODO: don't make start_line default to the first sel's begin(). It's
     # confusing. ???
-    if start_line:
-        start = view.text_point(start_line, 0)
-    else:
-        start = view.sel()[0].begin()
+    start = view.text_point(start_line, 0) if start_line else view.sel()[0].begin()
     reg = view.find(what, start, flags)
-    if not reg is None:
-        row = (view.rowcol(reg.begin())[0] + 1)
-    else:
-        row = calculate_relative_ref(view, '.', start_line=start_line)
-    return row
+    return (
+        (view.rowcol(reg.begin())[0] + 1)
+        if reg is not None
+        else calculate_relative_ref(view, '.', start_line=start_line)
+    )
